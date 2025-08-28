@@ -1,3 +1,6 @@
+// String Calculator TDD Kata - Plugin Version
+// Can be used as both standalone script and Flutter plugin
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,6 +14,7 @@ class NegativeNumberException implements Exception {
   String toString() => message;
 }
 
+/// String Calculator - Pure function implementation
 class StringCalculator {
   /// Adds numbers from a string representation
   ///
@@ -20,13 +24,14 @@ class StringCalculator {
   /// - Comma-separated numbers
   /// - Newline-separated numbers
   /// - Custom delimiters in format "//[delimiter]\n[numbers...]"
+  /// - Custom default delimiter (overrides comma default)
   /// - Throws exception for negative numbers
-  static int add(String numbers) {
+  static int add(String numbers, [String? defaultDelimiter]) {
     if (numbers.isEmpty) {
       return 0;
     }
 
-    final parsedInput = _parseInput(numbers);
+    final parsedInput = _parseInput(numbers, defaultDelimiter);
     final numberList = _extractNumbers(
       parsedInput.numbers,
       parsedInput.delimiter,
@@ -39,9 +44,12 @@ class StringCalculator {
 
   /// Safe version that returns a result with error information
   /// Perfect for UI integration where exceptions need to be handled gracefully
-  static CalculatorResult calculate(String numbers) {
+  static CalculatorResult calculate(
+    String numbers, [
+    String? defaultDelimiter,
+  ]) {
     try {
-      final result = add(numbers);
+      final result = add(numbers, defaultDelimiter);
       return CalculatorResult.success(result);
     } catch (e) {
       return CalculatorResult.error(e.toString());
@@ -49,7 +57,7 @@ class StringCalculator {
   }
 
   /// Parses the input string to extract delimiter and numbers
-  static ParsedInput _parseInput(String numbers) {
+  static ParsedInput _parseInput(String numbers, [String? defaultDelimiter]) {
     if (numbers.startsWith('//')) {
       final parts = numbers.split('\n');
       final delimiterLine = parts[0];
@@ -58,7 +66,7 @@ class StringCalculator {
       return ParsedInput(delimiter, numbersString);
     }
 
-    return ParsedInput(',', numbers);
+    return ParsedInput(defaultDelimiter ?? ',', numbers);
   }
 
   /// Extracts numbers from string using the specified delimiter
@@ -163,7 +171,7 @@ class TestRunner {
     }
   }
 
-  static void debugPrintSummarydebugPrint() {
+  static void printSummary() {
     final passed = _results.where((r) => r.passed).length;
     final total = _results.length;
 
@@ -279,7 +287,7 @@ void runTests() {
     );
   });
 
-  TestRunner.debugPrintSummarydebugPrint();
+  TestRunner.printSummary();
 }
 
 // =============================================================================
@@ -328,6 +336,19 @@ void main(List<String> args) {
     for (final example in negativeExamples) {
       final result = StringCalculator.calculate(example);
       debugPrint('add("$example") error: ${result.error}');
+    }
+
+    // Demonstrate custom default delimiter
+    debugPrint('\nCustom default delimiter examples:');
+    final customDelimiterExamples = [
+      ('1;2;3', ';'),
+      ('1|2|3', '|'),
+      ('1*2*3', '*'),
+    ];
+
+    for (final example in customDelimiterExamples) {
+      final result = StringCalculator.calculate(example.$1, example.$2);
+      debugPrint('add("${example.$1}", "${example.$2}") = ${result.value}');
     }
   }
 }

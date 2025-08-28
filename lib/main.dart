@@ -34,9 +34,12 @@ class CalculatorHomePage extends StatefulWidget {
 class _CalculatorHomePageState extends State<CalculatorHomePage>
     with TickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
+  final TextEditingController _delimiterController = TextEditingController();
   String _result = '';
   bool _isError = false;
   bool _hasCalculated = false;
+
+  int _delimiterChoice = 0;
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -46,6 +49,7 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
   void initState() {
     super.initState();
     _setupAnimations();
+    _delimiterController.text = ','; // Default comma
   }
 
   void _setupAnimations() {
@@ -66,13 +70,31 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
   @override
   void dispose() {
     _textController.dispose();
+    _delimiterController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   void _calculate() {
     final input = _textController.text.trim();
-    final result = StringCalculator.calculate(input);
+    final customDelimiter = _delimiterChoice == 1
+        ? _delimiterController.text.trim()
+        : null;
+
+    // Update text field delimiter if custom delimiter is being used and text has content
+    if (_delimiterChoice == 1 && input.isNotEmpty && !input.startsWith('//')) {
+      final currentDelimiter = ','; // Assume current delimiter is comma
+      final newDelimiter = _delimiterController.text.trim();
+      if (newDelimiter.isNotEmpty && newDelimiter != currentDelimiter) {
+        final updatedInput = input.replaceAll(currentDelimiter, newDelimiter);
+        _textController.text = updatedInput;
+      }
+    }
+
+    final result = StringCalculator.calculate(
+      _textController.text.trim(),
+      customDelimiter,
+    );
 
     setState(() {
       _hasCalculated = true;
@@ -118,6 +140,103 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
           backgroundColor: Colors.deepPurple.withOpacity(0.1),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildDelimiterSection() {
+    return Card(
+      elevation: 2,
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDelimiterHeader(),
+            const SizedBox(height: 8),
+            _buildDelimiterRadioButtons(),
+            if (_delimiterChoice == 1) ...[
+              const SizedBox(height: 12),
+              _buildDelimiterTextField(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDelimiterHeader() {
+    return Row(
+      children: [
+        Icon(Icons.settings, color: Colors.orange.shade700, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          'Default Delimiter (Optional)',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.orange.shade700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDelimiterRadioButtons() {
+    return Column(
+      children: [
+        RadioListTile<int>(
+          title: const Text(
+            'Use default delimiter (,)',
+            style: TextStyle(fontSize: 13),
+          ),
+          value: 0,
+          groupValue: _delimiterChoice,
+          onChanged: (value) {
+            setState(() {
+              _delimiterChoice = value ?? 0;
+              if (_delimiterChoice == 0) {
+                _delimiterController.text = ',';
+              }
+            });
+          },
+          activeColor: Colors.orange,
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+        RadioListTile<int>(
+          title: const Text(
+            'Use custom delimiter',
+            style: TextStyle(fontSize: 13),
+          ),
+          value: 1,
+          groupValue: _delimiterChoice,
+          onChanged: (value) {
+            setState(() {
+              _delimiterChoice = value ?? 0;
+            });
+          },
+          activeColor: Colors.orange,
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDelimiterTextField() {
+    return TextField(
+      controller: _delimiterController,
+      decoration: InputDecoration(
+        labelText: 'Custom Delimiter',
+        hintText: 'e.g., ; or | or *',
+        border: const OutlineInputBorder(),
+        prefixIcon: Icon(Icons.text_fields, color: Colors.orange.shade600),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        isDense: true,
+      ),
+      maxLength: 3,
+      style: const TextStyle(fontSize: 14),
     );
   }
 
@@ -235,6 +354,10 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
             _buildResultTitle(),
             const SizedBox(height: 8),
             _buildResultValue(),
+            if (!_isError && _delimiterChoice == 1) ...[
+              const SizedBox(height: 8),
+              _buildDelimiterUsedInfo(),
+            ],
           ],
         ),
       ),
@@ -269,6 +392,24 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
         color: _isError ? Colors.red.shade800 : Colors.green.shade800,
       ),
       textAlign: TextAlign.center,
+    );
+  }
+
+  Widget _buildDelimiterUsedInfo() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        'Used delimiter: "${_delimiterController.text}"',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.green.shade700,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -343,6 +484,7 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
       '• Comma-separated: 1,2,3\n'
       '• Newline-separated: 1\\n2,3\n'
       '• Custom delimiters: //;\\n1;2;3\n'
+      '• Custom default delimiter (optional)\n'
       '• Empty string returns 0\n'
       '• Negative numbers throw errors',
       style: TextStyle(fontSize: 13, color: Colors.blue.shade600, height: 1.4),
@@ -355,6 +497,8 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
       child: Column(
         children: [
           _buildInputSection(),
+          const SizedBox(height: 16),
+          _buildDelimiterSection(),
           const SizedBox(height: 24),
           _buildCalculateButton(),
           const SizedBox(height: 40),
