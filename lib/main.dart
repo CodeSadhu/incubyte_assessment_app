@@ -123,9 +123,13 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
   }
 
   Widget _buildExampleChips() {
+    final delimiter = _delimiterChoice == 1
+        ? _delimiterController.text.trim()
+        : ',';
+
     final examples = [
-      ('Basic: 1,2,3', '1,2,3'),
-      ('Newlines: 1\\n2,3', '1\n2,3'),
+      ('Basic: 1${delimiter}2${delimiter}3', '1${delimiter}2${delimiter}3'),
+      ('Newlines: 1\\n2${delimiter}3', '1\n2${delimiter}3'),
       ('Custom: //;\\n1;2', '//;\n1;2'),
     ];
 
@@ -269,10 +273,15 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
   }
 
   Widget _buildNumberTextField() {
+    final delimiter = _delimiterChoice == 1
+        ? _delimiterController.text.trim()
+        : ',';
+
     return TextField(
       controller: _textController,
       decoration: InputDecoration(
-        hintText: 'e.g., 1,2,3 or //;\\n1;2 or 1\\n2,3',
+        hintText:
+            'e.g., 1${delimiter}2${delimiter}3 or //;\\n1;2 or 1\\n2${delimiter}3',
         border: const OutlineInputBorder(),
         prefixIcon: const Icon(Icons.calculate),
         suffixIcon: _textController.text.isNotEmpty
@@ -344,21 +353,24 @@ class _CalculatorHomePageState extends State<CalculatorHomePage>
     return Card(
       elevation: 8,
       color: _isError ? Colors.red.shade50 : Colors.green.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildResultIcon(),
-            const SizedBox(height: 16),
-            _buildResultTitle(),
-            const SizedBox(height: 8),
-            _buildResultValue(),
-            if (!_isError && _delimiterChoice == 1) ...[
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildResultIcon(),
+              const SizedBox(height: 16),
+              _buildResultTitle(),
               const SizedBox(height: 8),
-              _buildDelimiterUsedInfo(),
+              _buildResultValue(),
+              if (!_isError && _delimiterChoice == 1) ...[
+                const SizedBox(height: 8),
+                _buildDelimiterUsedInfo(),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
